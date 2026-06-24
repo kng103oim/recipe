@@ -8,59 +8,68 @@
         :root {
             --primary: #2ecc71;
             --primary-hover: #27ae60;
-            --bg: #f8f9fa;
+            --bg: #f5f7fa;
             --card-bg: #ffffff;
-            --text: #333333;
-            --text-muted: #666666;
-            --border: #e0e0e0;
+            --text: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border: #e2e8f0;
+            --accent: #e74c3c;
         }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; display: flex; justify-content: center; }
-        .app-container { max-width: 500px; width: 100%; padding-bottom: 40px; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 22px; margin: 0; color: #2c3e50; }
-        
-        /* 設定パネル */
-        .config-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group:last-child { margin-bottom: 0; }
-        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-        input[type="number"], select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fff; }
-        
-        .btn-submit { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .btn-submit:hover { background-color: var(--primary-hover); }
+        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; display: flex; justify-content: center; }
+        .app-container { max-width: 550px; width: 100%; padding-bottom: 60px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; margin: 0; color: #2c3e50; letter-spacing: 1px; }
         
         /* ステータス表示 */
-        .status-badge { text-align: center; font-size: 12px; padding: 6px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; }
-        .status-loading { background-color: #ffeaa7; color: #d63031; }
-        .status-success { background-color: #e8f8f0; color: #27ae60; }
-        .status-error { background-color: #ffd2d2; color: #d63031; }
+        .status-badge { text-align: center; font-size: 12px; padding: 8px; border-radius: 8px; margin-bottom: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .status-loading { background-color: #fef3c7; color: #d97706; }
+        .status-success { background-color: #d1fae5; color: #059669; }
+        .status-error { background-color: #fee2e2; color: #dc2626; }
 
-        /* セクションタイトル */
-        .section-title { font-size: 18px; font-weight: bold; margin: 24px 0 12px 0; border-left: 4px solid var(--primary); padding-left: 10px; color: #2c3e50; }
+        /* 設定パネル */
+        .config-card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); margin-bottom: 24px; border: 1px solid var(--border); }
+        .form-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .form-group { flex: 1; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; color: #4a5568; }
+        input[type="number"], select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; box-sizing: border-box; font-size: 15px; background-color: #fff; color: var(--text); transition: border 0.2s; }
+        input[type="number"]:focus, select:focus { border-color: var(--primary); outline: none; }
         
-        /* レシピカード */
-        .recipe-card { background: var(--card-bg); padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; border: 1px solid var(--border); }
-        .recipe-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .recipe-title { font-size: 16px; font-weight: bold; margin: 0; color: #2c3e50; }
-        .badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: bold; color: white; }
-        .badge.高 { background-color: #ff4757; }
-        .badge.中 { background-color: #ffa502; }
-        .badge.低 { background-color: #1e90ff; }
-        .recipe-url { font-size: 13px; color: #3498db; text-decoration: none; display: inline-block; margin-bottom: 10px; }
+        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); }
+        .btn-submit:hover { background-color: var(--primary-hover); }
+        .btn-submit:active { transform: scale(0.98); }
+        
+        /* セクションタイトル */
+        .section-title { font-size: 18px; font-weight: bold; margin: 28px 0 14px 0; border-left: 5px solid var(--primary); padding-left: 12px; color: #1a202c; }
+        
+        /* 週間カレンダー・レシピ配置 */
+        .calendar-grid { display: flex; flex-direction: column; gap: 12px; }
+        .day-card { background: var(--card-bg); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; }
+        .day-label { width: 60px; background: #edf2f7; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; font-size: 16px; border-right: 1px solid var(--border); color: #4a5568; }
+        .day-card.day-日 .day-label { color: #e53e3e; background: #fff5f5; }
+        .day-card.day-土 .day-label { color: #3182ce; background: #ebf8ff; }
+        .day-content { flex: 1; padding: 14px; position: relative; }
+        .recipe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .recipe-title { font-size: 15px; font-weight: bold; margin: 0; color: #1a202c; }
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: bold; color: white; }
+        .badge.高 { background-color: #e53e3e; }
+        .badge.中 { background-color: #dd6b20; }
+        .badge.低 { background-color: #3182ce; }
+        .recipe-url { font-size: 12px; color: #3182ce; text-decoration: none; display: inline-block; margin-bottom: 8px; }
         .recipe-url:hover { text-decoration: underline; }
-        .ingredient-tags { font-size: 13px; color: var(--text-muted); line-height: 1.5; background: #f1f2f6; padding: 10px; border-radius: 6px; margin: 0; }
+        .ingredient-preview { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4; }
         
         /* 買い物リスト */
-        .shopping-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border); }
-        .group-title { font-size: 14px; font-weight: bold; background: #e8f8f0; color: var(--primary-hover); padding: 4px 8px; border-radius: 4px; margin-top: 16px; margin-bottom: 8px; }
-        .group-title:first-child { margin-top: 0; }
-        .shopping-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+        .shopping-card { background: var(--card-bg); padding: 18px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); border: 1px solid var(--border); }
+        .group-section { margin-bottom: 20px; }
+        .group-section:last-child { margin-bottom: 0; }
+        .group-title { font-size: 14px; font-weight: bold; background: #f7fafc; color: #4a5568; padding: 6px 12px; border-radius: 8px; border-left: 4px solid #cbd5e0; margin-bottom: 8px; }
+        .shopping-item { display: flex; align-items: center; padding: 9px 4px; border-bottom: 1px dashed #edf2f7; font-size: 14px; }
         .shopping-item:last-child { border-bottom: none; }
-        .shopping-item input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; cursor: pointer; }
-        .shopping-item input[type="checkbox"]:checked + span { text-decoration: line-through; color: #a4b0be; }
-        .item-qty { margin-left: auto; font-weight: bold; color: #57606f; }
+        .shopping-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; cursor: pointer; border: 1px solid var(--border); border-radius: 4px; }
+        .shopping-item input[type="checkbox"]:checked + span { text-decoration: line-through; color: #a0aec0; }
+        .item-qty { margin-left: auto; font-weight: bold; color: #718096; font-size: 13px; }
         
-        .empty-msg { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+        .empty-msg { text-align: center; color: var(--text-muted); padding: 50px 0; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -70,58 +79,60 @@
         <h1>🍳 爆速献立キュレーター</h1>
     </div>
 
-    <div id="status-panel" class="status-badge status-loading">🔄 スプレッドシートから最新データを読み込み中...</div>
+    <div id="status-panel" class="status-badge status-loading">🔄 スプレッドシートからデータを同期中...</div>
 
     <div class="config-card">
-        <div class="form-group">
-            <label for="count">抽出する品数</label>
-            <input type="number" id="count" value="3" min="1" max="10">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="count">作成する日数</label>
+                <input type="number" id="count" value="6" min="1" max="7">
+            </div>
+            <div class="form-group">
+                <label for="price-filter">価格帯制限</label>
+                <select id="price-filter">
+                    <option value="すべて">すべて表示</option>
+                    <option value="低">価格帯：低</option>
+                    <option value="中">価格帯：中</option>
+                    <option value="高">価格帯：高</option>
+                </select>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="price-filter">価格帯フィルター</label>
-            <select id="price-filter">
-                <option value="すべて">すべて</option>
-                <option value="低">低</option>
-                <option value="中">中</option>
-                <option value="高">高</option>
-            </select>
-        </div>
-        <button class="btn-submit" onclick="generateMenu()">献立をランダムに決定する</button>
+        <button class="btn-submit" onclick="generateMenu()">献立カレンダーを自動生成</button>
     </div>
 
     <div id="result-area" style="display: none;">
-        <div class="section-title">🎰 抽選結果（メニューカード）</div>
-        <div id="recipe-cards-container"></div>
+        <div class="section-title">📅 週間献立カレンダー</div>
+        <div id="calendar-container" class="calendar-grid"></div>
 
-        <div class="section-title">🛒 【自動生成】まとめ買いリスト</div>
+        <div class="section-title">🛒 売り場別・まとめ買いリスト</div>
         <div class="shopping-card" id="shopping-list-container"></div>
     </div>
     
     <div id="empty-area" class="empty-msg">
-        上のボタンを押すと、スプレッドシートのデータからランダムに献立を作成します。
+        ボタンを押すと、スプレッドシートのデータから<br>リアルタイムでランダムな献立スケジュールを組み立てます。
     </div>
 </div>
 
 <script>
-// ★ ステップ1でコピーした「ウェブアプリのURL」をここに貼り付けてください
+// ★ あなたのGoogle Apps Script (GAS) のウェブアプリURLをここに貼り付けてください
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyAGDhEU2WlBZbaujvqBMxA8SBwHRtf2OGGDmrb5UgfpepJx5R4APoE7pB5MomM07Sj/exec";
 
 let allRows = [];
+const WEEKS = ["月", "火", "水", "木", "金", "土", "日"];
 
 async function loadSpreadsheetData() {
     if (!GAS_WEB_APP_URL.startsWith("http")) {
         updateStatus("error", "❌ ウェブアプリのURLが設定されていません。");
         return;
     }
-    
     try {
         const response = await fetch(GAS_WEB_APP_URL);
         if (!response.ok) throw new Error("通信エラー");
         allRows = await response.json();
-        updateStatus("success", "✅ 最新データのリアルタイム同期完了！");
+        updateStatus("success", "✅ スプレッドシートとリアルタイム同期中！");
     } catch (e) {
         console.error("データ取得失敗:", e);
-        updateStatus("error", "❌ データの取得に失敗しました。GASのデプロイ設定（全員に公開）を確認してください。");
+        updateStatus("error", "❌ 同期失敗。GASのデプロイ設定（全員に公開）を確認してください。");
     }
 }
 
@@ -131,23 +142,24 @@ function updateStatus(type, text) {
     statusPanel.innerHTML = text;
 }
 
-// 初回読み込み
+// 起動時にデータを読み込む
 loadSpreadsheetData();
 
 function generateMenu() {
     const count = parseInt(document.getElementById("count").value, 10);
     const priceFilter = document.getElementById("price-filter").value;
     
-    const recipeCardsContainer = document.getElementById("recipe-cards-container");
+    const calendarContainer = document.getElementById("calendar-container");
     const shoppingListContainer = document.getElementById("shopping-list-container");
     const resultArea = document.getElementById("result-area");
     const emptyArea = document.getElementById("empty-area");
 
     if (allRows.length === 0) {
-        alert("データがまだ読み込めていません。");
+        alert("データが同期できていません。上部のステータスを確認してください。");
         return;
     }
 
+    // 1. スプレッドシートデータのパースと結合セル補完
     const recipeMap = new Map();
     let currentName = "";
     let currentUrl = "";
@@ -180,69 +192,98 @@ function generateMenu() {
         }
     });
 
+    // 2. フィルター処理
     let recipeList = Array.from(recipeMap.values());
     if (priceFilter !== "すべて") {
         recipeList = recipeList.filter(r => r.price === priceFilter);
     }
 
     if (recipeList.length === 0) {
-        alert("該当する価格帯のレシピがありません。");
+        alert("条件に合うレシピがスプレッドシートにありません。");
         return;
     }
 
+    // 3. ランダムシャッフル
     for (let i = recipeList.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [recipeList[i], recipeList[j]] = [recipeList[j], recipeList[i]];
     }
 
+    // 4. 日数分だけレシピを抽出
     const selectedRecipes = recipeList.slice(0, count);
 
-    recipeCardsContainer.innerHTML = "";
+    // 5. 画面描画：カレンダー風の配置
+    calendarContainer.innerHTML = "";
     selectedRecipes.forEach((recipe, idx) => {
-        const ingredientText = recipe.ingredients.map(i => `${i.name}（${i.qty}）`).join('、');
+        const dayName = WEEKS[idx % WEEKS.length];
+        const ingredientText = recipe.ingredients.map(i => i.name).join('、');
+        
         const cardHtml = `
-            <div class="recipe-card">
-                <div class="recipe-header">
-                    <h3 class="recipe-title">${idx + 1}品目：${recipe.name}</h3>
-                    <span class="badge ${recipe.price}">${recipe.price}</span>
+            <div class="day-card day-${dayName}">
+                <div class="day-label">${dayName}</div>
+                <div class="day-content">
+                    <div class="recipe-header">
+                        <h3 class="recipe-title">${recipe.name}</h3>
+                        <span class="badge ${recipe.price}">${recipe.price}</span>
+                    </div>
+                    ${recipe.url ? `<a href="${recipe.url}" target="_blank" class="recipe-url">🔗 レシピリンク</a>` : ''}
+                    <p class="ingredient-preview">📝 ${ingredientText}</p>
                 </div>
-                ${recipe.url ? `<a href="${recipe.url}" target="_blank" class="recipe-url">🔗 レシピを見る</a>` : ''}
-                <p class="ingredient-tags"><strong>材料：</strong>${ingredientText}</p>
             </div>
         `;
-        recipeCardsContainer.innerHTML += cardHtml;
+        calendarContainer.innerHTML += cardHtml;
     });
 
-    const shoppingMap = new Map();
+    // 6. 買い物リストのグループ自動仕分け＆合算
+    const shoppingMap = new Map(); // Group -> ItemName -> Array of Qty
+    
     selectedRecipes.forEach(recipe => {
         recipe.ingredients.forEach(ing => {
-            const group = ing.group || "その他";
-            if (!shoppingMap.has(group)) shoppingMap.set(group, new Map());
+            const group = ing.group ? ing.group.toString().trim() : "その他";
+            if (!shoppingMap.has(group)) {
+                shoppingMap.set(group, new Map());
+            }
             const groupMap = shoppingMap.get(group);
-            if (!groupMap.has(ing.name)) groupMap.set(ing.name, []);
-            groupMap.get(ing.name).push(ing.qty);
+            if (!groupMap.has(ing.name)) {
+                groupMap.set(ing.name, []);
+            }
+            if (ing.qty) {
+                groupMap.get(ing.name).push(ing.qty);
+            }
         });
     });
 
+    // 買い物リストのHTML生成
     shoppingListContainer.innerHTML = "";
+    // グループ名（A, B, C...）でソート
     const sortedGroups = Array.from(shoppingMap.keys()).sort();
     
-    sortedGroups.forEach(group => {
-        let groupHtml = `<div class="group-title">🏢 グループ ${group}</div>`;
-        const itemsMap = shoppingMap.get(group);
-        
-        itemsMap.forEach((qtys, itemName) => {
-            const combinedQty = qtys.filter(q => q !== "").join(' ＋ ');
-            groupHtml += `
-                <div class="shopping-item">
-                    <input type="checkbox">
-                    <span>${itemName}</span>
-                    <span class="item-qty">${combinedQty}</span>
-                </div>
+    if (sortedGroups.length === 0) {
+        shoppingListContainer.innerHTML = '<div class="empty-msg">材料データがありません。</div>';
+    } else {
+        sortedGroups.forEach(group => {
+            let groupHtml = `
+                <div class="group-section">
+                    <div class="group-title">【${group}】セクション</div>
             `;
+            
+            const itemsMap = shoppingMap.get(group);
+            itemsMap.forEach((qtys, itemName) => {
+                // 同じ食材の数量を「＋」で綺麗につなぐ
+                const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
+                groupHtml += `
+                    <div class="shopping-item">
+                        <input type="checkbox" id="chk-${group}-${itemName}">
+                        <span>${itemName}</span>
+                        <span class="item-qty">${combinedQty}</span>
+                    </div>
+                `;
+            });
+            
+            groupHtml += `</div>`;
+            shoppingListContainer.innerHTML += groupHtml;
         });
-        shoppingListContainer.innerHTML += groupHtml;
-    });
+    }
 
     emptyArea.style.display = "none";
     resultArea.style.display = "block";
