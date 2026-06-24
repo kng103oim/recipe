@@ -145,13 +145,12 @@
 </div>
 
 <script>
-// 設定していただいたGoogle Apps Script (GAS) のウェブアプリURL
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyAGDhEU2WlBZbaujvqBMxA8SBwHRtf2OGGDmrb5UgfpepJx5R4APoE7pB5MomM07Sj/exec";
 
 let allRows = [];
 let currentSelectedRecipes = []; 
 const WEEKS = ["月", "火", "水", "木", "金", "土", "日"];
-const MAX_KEEPS = 7; // 最大キープ数
+const MAX_KEEPS = 7; 
 
 async function loadSpreadsheetData() {
     if (!GAS_WEB_APP_URL.startsWith("http")) {
@@ -163,7 +162,6 @@ async function loadSpreadsheetData() {
         if (!response.ok) throw new Error("通信エラー");
         allRows = await response.json();
         updateStatus("success", "✅ スプレッドシートとリアルタイム同期中！");
-        // 履歴プルダウンの初期構築
         refreshHistoryDropdown();
     } catch (e) {
         console.error("データ取得失敗:", e);
@@ -220,7 +218,7 @@ function generateMenu() {
             recipeMap.get(id).ingredients.push({
                 name: row[3],
                 qty: row[4] || "",
-                group: row[5] || "その他"
+                group: row[5] || "F 乳製品・その他" // 空欄時のフォールバック
             });
         }
     });
@@ -276,7 +274,7 @@ function renderShoppingList(recipes, container, prefix) {
     const shoppingMap = new Map();
     recipes.forEach(recipe => {
         recipe.ingredients.forEach(ing => {
-            const group = ing.group ? ing.group.toString().trim() : "その他";
+            const group = ing.group ? ing.group.toString().trim() : "F 乳製品・その他";
             if (!shoppingMap.has(group)) shoppingMap.set(group, new Map());
             const groupMap = shoppingMap.get(group);
             if (!groupMap.has(ing.name)) groupMap.set(ing.name, []);
@@ -285,6 +283,7 @@ function renderShoppingList(recipes, container, prefix) {
     });
 
     container.innerHTML = "";
+    // A〜Fの順に綺麗に売り場を並べるソート
     const sortedGroups = Array.from(shoppingMap.keys()).sort();
     
     if (sortedGroups.length === 0) {
@@ -293,7 +292,7 @@ function renderShoppingList(recipes, container, prefix) {
     }
 
     sortedGroups.forEach(group => {
-        let groupHtml = `<div class="group-section"><div class="group-title">【${group}】セクション</div>`;
+        let groupHtml = `<div class="group-section"><div class="group-title">【${group}】</div>`;
         const itemsMap = shoppingMap.get(group);
         itemsMap.forEach((qtys, itemName) => {
             const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
@@ -310,7 +309,6 @@ function renderShoppingList(recipes, container, prefix) {
     });
 }
 
-// 📌 【新機能】最大7件のキープ保存
 function saveCurrentMenu() {
     if (currentSelectedRecipes.length === 0) {
         alert("まだ献立が自動生成されていません。先に「献立カレンダーを自動生成」ボタンを押してください。");
@@ -327,14 +325,12 @@ function saveCurrentMenu() {
         if (!confirm(`キープが上限の${MAX_KEEPS}件に達しています。一番古いキープを削除して新しく保存しますか？`)) {
             return;
         }
-        keepHistory.shift(); // 一番古いものを削除
+        keepHistory.shift(); 
     }
 
-    // 現在の日時スタンプを作成
     const now = new Date();
     const timeLabel = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} 保存`;
 
-    // 履歴オブジェクトを追加
     keepHistory.push({
         id: Date.now().toString(),
         label: timeLabel,
@@ -342,13 +338,10 @@ function saveCurrentMenu() {
     });
 
     localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
-    
-    // プルダウンを再構築し、今保存した最新のものを選択状態にする
     refreshHistoryDropdown(keepHistory.length - 1);
     alert("献立を新しくキープしました！");
 }
 
-// 📌 【新機能】プルダウンメニューの再更新
 function refreshHistoryDropdown(selectedIndex = -1) {
     const select = document.getElementById("history-select");
     const localData = localStorage.getItem("saved_menu_history");
@@ -370,15 +363,11 @@ function refreshHistoryDropdown(selectedIndex = -1) {
         select.appendChild(option);
     });
 
-    // インデックス指定があればそれを選択、なければ一番新しいもの（最後）を選択
     const targetIndex = selectedIndex >= 0 ? selectedIndex : keepHistory.length - 1;
     select.selectedIndex = targetIndex;
-    
-    // 選択された履歴の献立を描画
     drawSavedContent(keepHistory[targetIndex]);
 }
 
-// 📌 【新機能】選択されているキープ献立を描画
 function drawSavedContent(historyItem) {
     const savedContainer = document.getElementById("saved-container");
     const savedShoppingContainer = document.getElementById("saved-shopping-container");
@@ -393,7 +382,6 @@ function drawSavedContent(historyItem) {
     renderShoppingList(historyItem.recipes, savedShoppingContainer, `saved-${historyItem.id}`);
 }
 
-// 📌 【新機能】ユーザーがプルダウンを切り替えた時の処理
 function switchSavedMenu() {
     const select = document.getElementById("history-select");
     const selectedId = select.value;
@@ -406,7 +394,6 @@ function switchSavedMenu() {
     }
 }
 
-// 📌 【新機能】選択中キープの削除
 function deleteSelectedMenu() {
     const select = document.getElementById("history-select");
     const selectedId = select.value;
