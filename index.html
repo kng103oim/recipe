@@ -39,15 +39,19 @@
         .btn-submit:hover { background-color: var(--primary-hover); }
         .btn-submit:active { transform: scale(0.98); }
 
-        /* 保存ボタン（常時表示） */
+        /* 保存ボタン */
         .btn-save-all { width: 100%; padding: 14px; background-color: var(--save-btn); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); margin-bottom: 24px; }
         .btn-save-all:hover { background-color: var(--save-btn-hover); }
         
-        .btn-delete { padding: 6px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; float: right; margin-top: -6px; }
+        .btn-delete { padding: 6px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         
         /* セクションタイトル */
         .section-title { font-size: 18px; font-weight: bold; margin: 28px 0 14px 0; border-left: 5px solid var(--primary); padding-left: 12px; color: #1a202c; }
         .section-title.saved-title { border-left-color: var(--save-btn); }
+
+        /* 履歴選択のドロップダウンUI */
+        .history-selector-wrapper { background: #fff; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+        .history-selector-wrapper select { padding: 8px; font-size: 14px; flex: 1; }
 
         /* 週間カレンダー・レシピ配置 */
         .calendar-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -126,13 +130,16 @@
     </div>
 
     <div class="saved-area">
-        <div class="section-title saved-title" style="margin-top:0;">
-            📌 現在キープ中の献立
-            <button class="btn-delete" onclick="clearSavedMenu()">削除</button>
+        <div class="section-title saved-title" style="margin-top:0;">📌 キープ済みの献立履歴</div>
+        
+        <div class="history-selector-wrapper">
+            <select id="history-select" onchange="switchSavedMenu()">
+                <option value="">キープ中の献立はありません</option>
+            </select>
+            <button class="btn-delete" onclick="deleteSelectedMenu()">削除</button>
         </div>
-        <div id="saved-container">
-            <div class="empty-msg" style="padding:20px 0;">キープ中の献立はありません。</div>
-        </div>
+
+        <div id="saved-container"></div>
         <div id="saved-shopping-container" style="margin-top: 15px;"></div>
     </div>
 </div>
@@ -142,8 +149,9 @@
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyAGDhEU2WlBZbaujvqBMxA8SBwHRtf2OGGDmrb5UgfpepJx5R4APoE7pB5MomM07Sj/exec";
 
 let allRows = [];
-let currentSelectedRecipes = []; // 現在画面に表示されているレシピを保持
+let currentSelectedRecipes = []; 
 const WEEKS = ["月", "火", "水", "木", "金", "土", "日"];
+const MAX_KEEPS = 7; // 最大キープ数
 
 async function loadSpreadsheetData() {
     if (!GAS_WEB_APP_URL.startsWith("http")) {
@@ -155,8 +163,8 @@ async function loadSpreadsheetData() {
         if (!response.ok) throw new Error("通信エラー");
         allRows = await response.json();
         updateStatus("success", "✅ スプレッドシートとリアルタイム同期中！");
-        // 起動時にローカルストレージから保存データを読み込んで表示
-        displaySavedMenu();
+        // 履歴プルダウンの初期構築
+        refreshHistoryDropdown();
     } catch (e) {
         console.error("データ取得失敗:", e);
         updateStatus("error", "❌ 同期失敗。GASの設定（全員に公開）を確認してください。");
@@ -234,16 +242,13 @@ function generateMenu() {
 
     currentSelectedRecipes = recipeList.slice(0, count);
 
-    // カレンダー描画
     renderCalendar(currentSelectedRecipes, calendarContainer);
-    // 買い物リスト描画
     renderShoppingList(currentSelectedRecipes, shoppingListContainer, "main");
 
     emptyArea.style.display = "none";
     resultArea.style.display = "block";
 }
 
-// カレンダー描画ロジックを共通化
 function renderCalendar(recipes, container) {
     container.innerHTML = "";
     recipes.forEach((recipe, idx) => {
@@ -267,7 +272,6 @@ function renderCalendar(recipes, container) {
     });
 }
 
-// 買い物リスト描画ロジックを共通化
 function renderShoppingList(recipes, container, prefix) {
     const shoppingMap = new Map();
     recipes.forEach(recipe => {
@@ -306,43 +310,116 @@ function renderShoppingList(recipes, container, prefix) {
     });
 }
 
-// 📌 【機能】現在の献立をブラウザに保存
+// 📌 【新機能】最大7件のキープ保存
 function saveCurrentMenu() {
     if (currentSelectedRecipes.length === 0) {
         alert("まだ献立が自動生成されていません。先に「献立カレンダーを自動生成」ボタンを押してください。");
         return;
     }
-    if (confirm("現在表示されている献立をキープしますか？（古いキープは上書きされます）")) {
-        localStorage.setItem("saved_menu", JSON.stringify(currentSelectedRecipes));
-        displaySavedMenu();
-        alert("献立をキープしました！アプリを閉じてもここから確認できます。");
+
+    let keepHistory = [];
+    const localData = localStorage.getItem("saved_menu_history");
+    if (localData) {
+        keepHistory = JSON.parse(localData);
     }
+
+    if (keepHistory.length >= MAX_KEEPS) {
+        if (!confirm(`キープが上限の${MAX_KEEPS}件に達しています。一番古いキープを削除して新しく保存しますか？`)) {
+            return;
+        }
+        keepHistory.shift(); // 一番古いものを削除
+    }
+
+    // 現在の日時スタンプを作成
+    const now = new Date();
+    const timeLabel = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} 保存`;
+
+    // 履歴オブジェクトを追加
+    keepHistory.push({
+        id: Date.now().toString(),
+        label: timeLabel,
+        recipes: currentSelectedRecipes
+    });
+
+    localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
+    
+    // プルダウンを再構築し、今保存した最新のものを選択状態にする
+    refreshHistoryDropdown(keepHistory.length - 1);
+    alert("献立を新しくキープしました！");
 }
 
-// 📌 【機能】キープしている献立を表示
-function displaySavedMenu() {
+// 📌 【新機能】プルダウンメニューの再更新
+function refreshHistoryDropdown(selectedIndex = -1) {
+    const select = document.getElementById("history-select");
+    const localData = localStorage.getItem("saved_menu_history");
+    
+    select.innerHTML = "";
+
+    if (!localData || JSON.parse(localData).length === 0) {
+        select.innerHTML = '<option value="">キープ中の献立はありません</option>';
+        document.getElementById("saved-container").innerHTML = '<div class="empty-msg" style="padding:20px 0;">キープ中の献立はありません。</div>';
+        document.getElementById("saved-shopping-container").innerHTML = "";
+        return;
+    }
+
+    const keepHistory = JSON.parse(localData);
+    keepHistory.forEach((item, index) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = `[${index + 1}] ${item.label}`;
+        select.appendChild(option);
+    });
+
+    // インデックス指定があればそれを選択、なければ一番新しいもの（最後）を選択
+    const targetIndex = selectedIndex >= 0 ? selectedIndex : keepHistory.length - 1;
+    select.selectedIndex = targetIndex;
+    
+    // 選択された履歴の献立を描画
+    drawSavedContent(keepHistory[targetIndex]);
+}
+
+// 📌 【新機能】選択されているキープ献立を描画
+function drawSavedContent(historyItem) {
     const savedContainer = document.getElementById("saved-container");
     const savedShoppingContainer = document.getElementById("saved-shopping-container");
-    const localData = localStorage.getItem("saved_menu");
-
-    if (!localData) {
-        savedContainer.innerHTML = '<div class="empty-msg" style="padding:20px 0;">キープ中の献立はありません。</div>';
+    
+    if (!historyItem) {
+        savedContainer.innerHTML = "";
         savedShoppingContainer.innerHTML = "";
         return;
     }
 
-    const savedRecipes = JSON.parse(localData);
-    // キープ用のミニカレンダーを描画
-    renderCalendar(savedRecipes, savedContainer);
-    // キープ用の買い物リストを描画
-    renderShoppingList(savedRecipes, savedShoppingContainer, "saved");
+    renderCalendar(historyItem.recipes, savedContainer);
+    renderShoppingList(historyItem.recipes, savedShoppingContainer, `saved-${historyItem.id}`);
 }
 
-// 📌 【機能】キープの消去
-function clearSavedMenu() {
-    if (confirm("キープ中の献立を削除しますか？")) {
-        localStorage.removeItem("saved_menu");
-        displaySavedMenu();
+// 📌 【新機能】ユーザーがプルダウンを切り替えた時の処理
+function switchSavedMenu() {
+    const select = document.getElementById("history-select");
+    const selectedId = select.value;
+    if (!selectedId) return;
+
+    const keepHistory = JSON.parse(localStorage.getItem("saved_menu_history") || "[]");
+    const targetItem = keepHistory.find(item => item.id === selectedId);
+    if (targetItem) {
+        drawSavedContent(targetItem);
+    }
+}
+
+// 📌 【新機能】選択中キープの削除
+function deleteSelectedMenu() {
+    const select = document.getElementById("history-select");
+    const selectedId = select.value;
+    if (!selectedId) {
+        alert("削除するキープがありません。");
+        return;
+    }
+
+    if (confirm("選択中のキープを削除しますか？")) {
+        let keepHistory = JSON.parse(localStorage.getItem("saved_menu_history") || "[]");
+        keepHistory = keepHistory.filter(item => item.id !== selectedId);
+        localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
+        refreshHistoryDropdown();
     }
 }
 </script>
