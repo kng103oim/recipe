@@ -14,6 +14,8 @@
             --text-muted: #7f8c8d;
             --border: #e2e8f0;
             --accent: #e74c3c;
+            --save-btn: #3498db;
+            --save-btn-hover: #2980b9;
         }
         body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: var(--bg); color: var(--text); padding: 16px; margin: 0; display: flex; justify-content: center; }
         .app-container { max-width: 550px; width: 100%; padding-bottom: 60px; }
@@ -32,15 +34,20 @@
         .form-group { flex: 1; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; color: #4a5568; }
         input[type="number"], select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; box-sizing: border-box; font-size: 15px; background-color: #fff; color: var(--text); transition: border 0.2s; }
-        input[type="number"]:focus, select:focus { border-color: var(--primary); outline: none; }
         
-        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); }
+        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); margin-bottom: 10px; }
         .btn-submit:hover { background-color: var(--primary-hover); }
         .btn-submit:active { transform: scale(0.98); }
+
+        .btn-save-all { width: 100%; padding: 12px; background-color: var(--save-btn); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); }
+        .btn-save-all:hover { background-color: var(--save-btn-hover); }
+        
+        .btn-delete { padding: 6px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; float: right; margin-top: -6px; }
         
         /* セクションタイトル */
         .section-title { font-size: 18px; font-weight: bold; margin: 28px 0 14px 0; border-left: 5px solid var(--primary); padding-left: 12px; color: #1a202c; }
-        
+        .section-title.saved-title { border-left-color: var(--save-btn); }
+
         /* 週間カレンダー・レシピ配置 */
         .calendar-grid { display: flex; flex-direction: column; gap: 12px; }
         .day-card { background: var(--card-bg); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; }
@@ -69,7 +76,10 @@
         .shopping-item input[type="checkbox"]:checked + span { text-decoration: line-through; color: #a0aec0; }
         .item-qty { margin-left: auto; font-weight: bold; color: #718096; font-size: 13px; }
         
-        .empty-msg { text-align: center; color: var(--text-muted); padding: 50px 0; font-size: 14px; line-height: 1.6; }
+        .empty-msg { text-align: center; color: var(--text-muted); padding: 45px 0; font-size: 14px; line-height: 1.6; }
+        
+        /* 履歴・キープエリア用の調整 */
+        .saved-area { background-color: #ebf3f9; padding: 16px; border-radius: 20px; margin-top: 30px; border: 1px dashed #b9d4ec; }
     </style>
 </head>
 <body>
@@ -101,23 +111,37 @@
     </div>
 
     <div id="result-area" style="display: none;">
-        <div class="section-title">📅 週間献立カレンダー</div>
+        <button class="btn-save-all" onclick="saveCurrentMenu()">📌 この1週間の献立をキープする</button>
+        
+        <div class="section-title">📅 提案された献立カレンダー</div>
         <div id="calendar-container" class="calendar-grid"></div>
 
-        <div class="section-title">🛒 売り場別・まとめ買いリスト</div>
+        <div class="section-title">🛒 売り場別・買い物リスト</div>
         <div class="shopping-card" id="shopping-list-container"></div>
     </div>
     
     <div id="empty-area" class="empty-msg">
-        ボタンを押すと、スプレッドシートのデータから<br>リアルタイムでランダムな献立スケジュールを組み立てます。
+        上のボタンを押すと、スプレッドシートのデータから<br>リアルタイムでランダムな献立スケジュールを組み立てます。
+    </div>
+
+    <div class="saved-area">
+        <div class="section-title saved-title" style="margin-top:0;">
+            📌 現在キープ中の献立
+            <button class="btn-delete" onclick="clearSavedMenu()">削除</button>
+        </div>
+        <div id="saved-container">
+            <div class="empty-msg" style="padding:20px 0;">キープ中の献立はありません。</div>
+        </div>
+        <div id="saved-shopping-container" style="margin-top: 15px;"></div>
     </div>
 </div>
 
 <script>
-// ★ あなたのGoogle Apps Script (GAS) のウェブアプリURLをここに貼り付けてください
+// 設定していただいたGoogle Apps Script (GAS) のウェブアプリURL
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyAGDhEU2WlBZbaujvqBMxA8SBwHRtf2OGGDmrb5UgfpepJx5R4APoE7pB5MomM07Sj/exec";
 
 let allRows = [];
+let currentSelectedRecipes = []; // 現在画面に表示されているレシピを保持
 const WEEKS = ["月", "火", "水", "木", "金", "土", "日"];
 
 async function loadSpreadsheetData() {
@@ -130,9 +154,11 @@ async function loadSpreadsheetData() {
         if (!response.ok) throw new Error("通信エラー");
         allRows = await response.json();
         updateStatus("success", "✅ スプレッドシートとリアルタイム同期中！");
+        // 起動時にローカルストレージから保存データを読み込んで表示
+        displaySavedMenu();
     } catch (e) {
         console.error("データ取得失敗:", e);
-        updateStatus("error", "❌ 同期失敗。GASのデプロイ設定（全員に公開）を確認してください。");
+        updateStatus("error", "❌ 同期失敗。GASの設定（全員に公開）を確認してください。");
     }
 }
 
@@ -142,7 +168,6 @@ function updateStatus(type, text) {
     statusPanel.innerHTML = text;
 }
 
-// 起動時にデータを読み込む
 loadSpreadsheetData();
 
 function generateMenu() {
@@ -155,11 +180,10 @@ function generateMenu() {
     const emptyArea = document.getElementById("empty-area");
 
     if (allRows.length === 0) {
-        alert("データが同期できていません。上部のステータスを確認してください。");
+        alert("データが同期できていません。");
         return;
     }
 
-    // 1. スプレッドシートデータのパースと結合セル補完
     const recipeMap = new Map();
     let currentName = "";
     let currentUrl = "";
@@ -192,7 +216,6 @@ function generateMenu() {
         }
     });
 
-    // 2. フィルター処理
     let recipeList = Array.from(recipeMap.values());
     if (priceFilter !== "すべて") {
         recipeList = recipeList.filter(r => r.price === priceFilter);
@@ -203,18 +226,26 @@ function generateMenu() {
         return;
     }
 
-    // 3. ランダムシャッフル
     for (let i = recipeList.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [recipeList[i], recipeList[j]] = [recipeList[j], recipeList[i]];
     }
 
-    // 4. 日数分だけレシピを抽出
-    const selectedRecipes = recipeList.slice(0, count);
+    currentSelectedRecipes = recipeList.slice(0, count);
 
-    // 5. 画面描画：カレンダー風の配置
-    calendarContainer.innerHTML = "";
-    selectedRecipes.forEach((recipe, idx) => {
+    // カレンダー描画
+    renderCalendar(currentSelectedRecipes, calendarContainer);
+    // 買い物リスト描画
+    renderShoppingList(currentSelectedRecipes, shoppingListContainer, "main");
+
+    emptyArea.style.display = "none";
+    resultArea.style.display = "block";
+}
+
+// カレンダー描画ロジックを共通化
+function renderCalendar(recipes, container) {
+    container.innerHTML = "";
+    recipes.forEach((recipe, idx) => {
         const dayName = WEEKS[idx % WEEKS.length];
         const ingredientText = recipe.ingredients.map(i => i.name).join('、');
         
@@ -231,62 +262,84 @@ function generateMenu() {
                 </div>
             </div>
         `;
-        calendarContainer.innerHTML += cardHtml;
+        container.innerHTML += cardHtml;
     });
+}
 
-    // 6. 買い物リストのグループ自動仕分け＆合算
-    const shoppingMap = new Map(); // Group -> ItemName -> Array of Qty
-    
-    selectedRecipes.forEach(recipe => {
+// 買い物リスト描画ロジックを共通化
+function renderShoppingList(recipes, container, prefix) {
+    const shoppingMap = new Map();
+    recipes.forEach(recipe => {
         recipe.ingredients.forEach(ing => {
             const group = ing.group ? ing.group.toString().trim() : "その他";
-            if (!shoppingMap.has(group)) {
-                shoppingMap.set(group, new Map());
-            }
+            if (!shoppingMap.has(group)) shoppingMap.set(group, new Map());
             const groupMap = shoppingMap.get(group);
-            if (!groupMap.has(ing.name)) {
-                groupMap.set(ing.name, []);
-            }
-            if (ing.qty) {
-                groupMap.get(ing.name).push(ing.qty);
-            }
+            if (!groupMap.has(ing.name)) groupMap.set(ing.name, []);
+            if (ing.qty) groupMap.get(ing.name).push(ing.qty);
         });
     });
 
-    // 買い物リストのHTML生成
-    shoppingListContainer.innerHTML = "";
-    // グループ名（A, B, C...）でソート
+    container.innerHTML = "";
     const sortedGroups = Array.from(shoppingMap.keys()).sort();
     
     if (sortedGroups.length === 0) {
-        shoppingListContainer.innerHTML = '<div class="empty-msg">材料データがありません。</div>';
-    } else {
-        sortedGroups.forEach(group => {
-            let groupHtml = `
-                <div class="group-section">
-                    <div class="group-title">【${group}】セクション</div>
-            `;
-            
-            const itemsMap = shoppingMap.get(group);
-            itemsMap.forEach((qtys, itemName) => {
-                // 同じ食材の数量を「＋」で綺麗につなぐ
-                const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
-                groupHtml += `
-                    <div class="shopping-item">
-                        <input type="checkbox" id="chk-${group}-${itemName}">
-                        <span>${itemName}</span>
-                        <span class="item-qty">${combinedQty}</span>
-                    </div>
-                `;
-            });
-            
-            groupHtml += `</div>`;
-            shoppingListContainer.innerHTML += groupHtml;
-        });
+        container.innerHTML = '<div class="empty-msg">材料データがありません。</div>';
+        return;
     }
 
-    emptyArea.style.display = "none";
-    resultArea.style.display = "block";
+    sortedGroups.forEach(group => {
+        let groupHtml = `<div class="group-section"><div class="group-title">【${group}】セクション</div>`;
+        const itemsMap = shoppingMap.get(group);
+        itemsMap.forEach((qtys, itemName) => {
+            const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
+            groupHtml += `
+                <div class="shopping-item">
+                    <input type="checkbox" id="chk-${prefix}-${group}-${itemName}">
+                    <span>${itemName}</span>
+                    <span class="item-qty">${combinedQty}</span>
+                </div>
+            `;
+        });
+        groupHtml += `</div>`;
+        container.innerHTML += groupHtml;
+    });
+}
+
+// 📌 【機能】現在の献立をブラウザに保存
+function saveCurrentMenu() {
+    if (currentSelectedRecipes.length === 0) return;
+    if (confirm("現在表示されている献立をキープしますか？（古いキープは上書きされます）")) {
+        localStorage.setItem("saved_menu", JSON.stringify(currentSelectedRecipes));
+        displaySavedMenu();
+        alert("献立をキープしました！アプリを閉じてもここから確認できます。");
+    }
+}
+
+// 📌 【機能】キープしている献立を表示
+function displaySavedMenu() {
+    const savedContainer = document.getElementById("saved-container");
+    const savedShoppingContainer = document.getElementById("saved-shopping-container");
+    const localData = localStorage.getItem("saved_menu");
+
+    if (!localData) {
+        savedContainer.innerHTML = '<div class="empty-msg" style="padding:20px 0;">キープ中の献立はありません。</div>';
+        savedShoppingContainer.innerHTML = "";
+        return;
+    }
+
+    const savedRecipes = JSON.parse(localData);
+    // キープ用のミニカレンダーを描画
+    renderCalendar(savedRecipes, savedContainer);
+    // キープ用の買い物リストを描画
+    renderShoppingList(savedRecipes, savedShoppingContainer, "saved");
+}
+
+// 📌 【機能】キープの消去
+function clearSavedMenu() {
+    if (confirm("キープ中の献立を削除しますか？")) {
+        localStorage.removeItem("saved_menu");
+        displaySavedMenu();
+    }
 }
 </script>
 
