@@ -29,17 +29,18 @@
         .status-error { background-color: #fee2e2; color: #dc2626; }
 
         /* 設定パネル */
-        .config-card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); margin-bottom: 24px; border: 1px solid var(--border); }
+        .config-card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); margin-bottom: 16px; border: 1px solid var(--border); }
         .form-row { display: flex; gap: 12px; margin-bottom: 16px; }
         .form-group { flex: 1; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; color: #4a5568; }
         input[type="number"], select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; box-sizing: border-box; font-size: 15px; background-color: #fff; color: var(--text); transition: border 0.2s; }
         
-        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); margin-bottom: 10px; }
+        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); }
         .btn-submit:hover { background-color: var(--primary-hover); }
         .btn-submit:active { transform: scale(0.98); }
 
-        .btn-save-all { width: 100%; padding: 12px; background-color: var(--save-btn); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); }
+        /* 保存ボタン（常時表示） */
+        .btn-save-all { width: 100%; padding: 14px; background-color: var(--save-btn); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); margin-bottom: 24px; }
         .btn-save-all:hover { background-color: var(--save-btn-hover); }
         
         .btn-delete { padding: 6px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; float: right; margin-top: -6px; }
@@ -110,9 +111,9 @@
         <button class="btn-submit" onclick="generateMenu()">献立カレンダーを自動生成</button>
     </div>
 
+    <button class="btn-save-all" onclick="saveCurrentMenu()">📌 この1週間の献立をキープする</button>
+
     <div id="result-area" style="display: none;">
-        <button class="btn-save-all" onclick="saveCurrentMenu()">📌 この1週間の献立をキープする</button>
-        
         <div class="section-title">📅 提案された献立カレンダー</div>
         <div id="calendar-container" class="calendar-grid"></div>
 
@@ -307,7 +308,10 @@ function renderShoppingList(recipes, container, prefix) {
 
 // 📌 【機能】現在の献立をブラウザに保存
 function saveCurrentMenu() {
-    if (currentSelectedRecipes.length === 0) return;
+    if (currentSelectedRecipes.length === 0) {
+        alert("まだ献立が自動生成されていません。先に「献立カレンダーを自動生成」ボタンを押してください。");
+        return;
+    }
     if (confirm("現在表示されている献立をキープしますか？（古いキープは上書きされます）")) {
         localStorage.setItem("saved_menu", JSON.stringify(currentSelectedRecipes));
         displaySavedMenu();
