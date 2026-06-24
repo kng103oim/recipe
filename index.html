@@ -105,10 +105,8 @@
             <div class="form-group">
                 <label for="price-filter">価格帯制限</label>
                 <select id="price-filter">
-                    <option value="すべて">すべて表示</option>
-                    <option value="低">価格帯：低</option>
-                    <option value="中">価格帯：中</option>
-                    <option value="高">価格帯：高</option>
+                    <option value="すべて">価格帯：普通（ランダム）</option>
+                    <option value="安め">価格帯：安め（低・中ベース）</option>
                 </select>
             </div>
         </div>
@@ -177,6 +175,15 @@ function updateStatus(type, text) {
 
 loadSpreadsheetData();
 
+// 配列をランダムシャッフルするヘルパー関数
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 function generateMenu() {
     const count = parseInt(document.getElementById("count").value, 10);
     const priceFilter = document.getElementById("price-filter").value;
@@ -191,6 +198,7 @@ function generateMenu() {
         return;
     }
 
+    // スプレッドシートからレシピオブジェクトマップを構築
     const recipeMap = new Map();
     let currentName = "";
     let currentUrl = "";
@@ -202,7 +210,7 @@ function generateMenu() {
         
         if (row[1] && row[1] !== "") currentName = row[1];
         if (row[2] && row[2] !== "") currentUrl = row[2];
-        if (row[6] && row[6] !== "") currentPrice = row[6];
+        if (row[6] && row[6] !== "") currentPrice = row[6].toString().trim();
         
         if (!recipeMap.has(id)) {
             recipeMap.set(id, {
@@ -218,27 +226,69 @@ function generateMenu() {
             recipeMap.get(id).ingredients.push({
                 name: row[3],
                 qty: row[4] || "",
-                group: row[5] || "F 乳製品・その他" // 空欄時のフォールバック
+                group: row[5] || "F 乳製品・その他"
             });
         }
     });
 
-    let recipeList = Array.from(recipeMap.values());
-    if (priceFilter !== "すべて") {
-        recipeList = recipeList.filter(r => r.price === priceFilter);
+    const allRecipes = Array.from(recipeMap.values());
+    currentSelectedRecipes = [];
+
+    if (priceFilter === "安め") {
+        // 価格帯ごとに分類
+        let lowRecipes = allRecipes.filter(r => r.price === "低");
+        let midRecipes = allRecipes.filter(r => r.price === "中");
+        let highRecipes = allRecipes.filter(r => r.price === "高");
+
+        // シャッフル
+        shuffle(lowRecipes);
+        shuffle(midRecipes);
+        shuffle(highRecipes);
+
+        // 日数に応じた価格帯の配分パターンを定義
+        let pattern = [];
+        if (count === 1) pattern = ["低"];
+        else if (count === 2) pattern = ["低", "低"];
+        else if (count === 3) pattern = ["低", "低", "低"];
+        else if (count === 4) pattern = ["低", "低", "低", "低"];
+        else if (count === 5) pattern = ["低", "低", "低", "低", "中"];
+        else if (count === 6) pattern = ["低", "低", "低", "低", "中", "中"];
+        else if (count >= 7) pattern = ["低", "低", "低", "低", "中", "中", "高"];
+
+        // 各価格帯のポインタ
+        let pLow = 0, pMid = 0, pHigh = 0;
+
+        for (let i = 0; i < count; i++) {
+            // 7日を超える場合のループ用補正
+            let currentTarget = pattern[i % pattern.length];
+            let selected = null;
+
+            if (currentTarget === "低" && pLow < lowRecipes.length) {
+                selected = lowRecipes[pLow++];
+            } else if (currentTarget === "中" && pMid < midRecipes.length) {
+                selected = midRecipes[pMid++];
+            } else if (currentTarget === "高" && pHigh < highRecipes.length) {
+                selected = highRecipes[pHigh++];
+            }
+
+            // 万が一、対象の価格帯レシピが尽きていた場合は全レシピのシャッフルから未選択のものを補填
+            if (!selected) {
+                let fallbackList = shuffle([...allRecipes]);
+                selected = fallbackList.find(r => !currentSelectedRecipes.includes(r));
+            }
+
+            if (selected) currentSelectedRecipes.push(selected);
+        }
+    } else {
+        // 「普通（すべて表示）」の場合は完全ランダム
+        let shuffledAll = shuffle([...allRecipes]);
+        currentSelectedRecipes = shuffledAll.slice(0, count);
     }
 
-    if (recipeList.length === 0) {
-        alert("条件に合うレシピがスプレッドシートにありません。");
+    if (currentSelectedRecipes.length === 0) {
+        alert("レシピデータが見つかりませんでした。");
         return;
     }
-
-    for (let i = recipeList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [recipeList[i], recipeList[j]] = [recipeList[j], recipeList[i]];
-    }
-
-    currentSelectedRecipes = recipeList.slice(0, count);
 
     renderCalendar(currentSelectedRecipes, calendarContainer);
     renderShoppingList(currentSelectedRecipes, shoppingListContainer, "main");
@@ -270,7 +320,7 @@ function renderCalendar(recipes, container) {
     });
 }
 
-function renderShoppingList(recipes, container, prefix) {
+function renderShoppingList(recipes, container, prefix, checkedItems = []) {
     const shoppingMap = new Map();
     recipes.forEach(recipe => {
         recipe.ingredients.forEach(ing => {
@@ -283,7 +333,6 @@ function renderShoppingList(recipes, container, prefix) {
     });
 
     container.innerHTML = "";
-    // A〜Fの順に綺麗に売り場を並べるソート
     const sortedGroups = Array.from(shoppingMap.keys()).sort();
     
     if (sortedGroups.length === 0) {
@@ -296,9 +345,13 @@ function renderShoppingList(recipes, container, prefix) {
         const itemsMap = shoppingMap.get(group);
         itemsMap.forEach((qtys, itemName) => {
             const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
+            const inputId = `chk-${prefix}-${group}-${itemName}`;
+            // 保存されたチェックリストに存在するかどうか判定
+            const isChecked = checkedItems.includes(inputId) ? "checked" : "";
+            
             groupHtml += `
                 <div class="shopping-item">
-                    <input type="checkbox" id="chk-${prefix}-${group}-${itemName}">
+                    <input type="checkbox" id="${inputId}" ${isChecked} onchange="updateLiveCheckStatus('${prefix}')">
                     <span>${itemName}</span>
                     <span class="item-qty">${combinedQty}</span>
                 </div>
@@ -309,6 +362,28 @@ function renderShoppingList(recipes, container, prefix) {
     });
 }
 
+// チェックボックス操作時に（キープ履歴データであれば）ローカルストレージの状態も即時更新する
+function updateLiveCheckStatus(prefix) {
+    if (prefix === "main") return; // メイン画面のチェックは保存ボタン押下時に一括取得するためスルー
+    
+    // プレフィックスが「saved-XXX」の形式なら、該当する履歴のチェック状態を上書き保存
+    const historyId = prefix.replace("saved-", "");
+    let keepHistory = JSON.parse(localStorage.getItem("saved_menu_history") || "[]");
+    const targetItem = keepHistory.find(item => item.id === historyId);
+    
+    if (targetItem) {
+        const container = document.getElementById("saved-shopping-container");
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        const checkedList = [];
+        checkboxes.forEach(chk => {
+            if (chk.checked) checkedList.push(chk.id);
+        });
+        targetItem.checkedItems = checkedList;
+        localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
+    }
+}
+
+// 📌 【アップグレード】チェック状態を含めてキープ保存
 function saveCurrentMenu() {
     if (currentSelectedRecipes.length === 0) {
         alert("まだ献立が自動生成されていません。先に「献立カレンダーを自動生成」ボタンを押してください。");
@@ -330,16 +405,30 @@ function saveCurrentMenu() {
 
     const now = new Date();
     const timeLabel = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} 保存`;
+    const newId = Date.now().toString();
+
+    // 🛠️ 現在メイン画面の買い物リストでチェックがついている要素のIDを取得
+    const mainContainer = document.getElementById("shopping-list-container");
+    const mainCheckboxes = mainContainer.querySelectorAll('input[type="checkbox"]');
+    const checkedItems = [];
+    mainCheckboxes.forEach(chk => {
+        if (chk.checked) {
+            // IDプレフィックスを保存先の履歴ID用に置換してストック
+            const savedIdFormat = chk.id.replace("chk-main-", `chk-saved-${newId}-`);
+            checkedItems.push(savedIdFormat);
+        }
+    });
 
     keepHistory.push({
-        id: Date.now().toString(),
+        id: newId,
         label: timeLabel,
-        recipes: currentSelectedRecipes
+        recipes: currentSelectedRecipes,
+        checkedItems: checkedItems // チェック状態リストを内包
     });
 
     localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
     refreshHistoryDropdown(keepHistory.length - 1);
-    alert("献立を新しくキープしました！");
+    alert("チェック状態も含めて献立を新しくキープしました！");
 }
 
 function refreshHistoryDropdown(selectedIndex = -1) {
@@ -379,7 +468,8 @@ function drawSavedContent(historyItem) {
     }
 
     renderCalendar(historyItem.recipes, savedContainer);
-    renderShoppingList(historyItem.recipes, savedShoppingContainer, `saved-${historyItem.id}`);
+    // 保存時のチェックリスト状態（checkedItems）を引き渡して描画
+    renderShoppingList(historyItem.recipes, savedShoppingContainer, `saved-${historyItem.id}`, historyItem.checkedItems || []);
 }
 
 function switchSavedMenu() {
