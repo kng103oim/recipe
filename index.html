@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>爆速献立キュレーター</title>
+    <title>献立ジェネレーター</title>
     <style>
         :root {
             --primary: #2ecc71;
@@ -14,6 +14,7 @@
             --text-muted: #7f8c8d;
             --border: #e2e8f0;
             --accent: #e74c3c;
+            --accent-hover: #c0392b;
             --save-btn: #3498db;
             --save-btn-hover: #2980b9;
         }
@@ -43,8 +44,13 @@
         .btn-save-all { width: 100%; padding: 14px; background-color: var(--save-btn); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); margin-bottom: 24px; }
         .btn-save-all:hover { background-color: var(--save-btn-hover); }
         
-        .btn-delete { padding: 6px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-delete { padding: 8px 12px; background-color: var(--accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-delete:hover { background-color: var(--accent-hover); }
         
+        /* 一括削除ボタン用のスタイル */
+        .btn-clear-all { padding: 8px 12px; background-color: #7f8c8d; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: auto; }
+        .btn-clear-all:hover { background-color: #95a5a6; }
+
         /* セクションタイトル */
         .section-title { font-size: 18px; font-weight: bold; margin: 28px 0 14px 0; border-left: 5px solid var(--primary); padding-left: 12px; color: #1a202c; }
         .section-title.saved-title { border-left-color: var(--save-btn); }
@@ -91,7 +97,7 @@
 
 <div class="app-container">
     <div class="header">
-        <h1>🍳 爆速献立キュレーター</h1>
+        <h1>🍳 献立ジェネレーター</h1>
     </div>
 
     <div id="status-panel" class="status-badge status-loading">🔄 スプレッドシートからデータを同期中...</div>
@@ -135,6 +141,7 @@
                 <option value="">キープ中の献立はありません</option>
             </select>
             <button class="btn-delete" onclick="deleteSelectedMenu()">削除</button>
+            <button class="btn-clear-all" onclick="clearAllMenu()">一括削除</button>
         </div>
 
         <div id="saved-container"></div>
@@ -175,7 +182,6 @@ function updateStatus(type, text) {
 
 loadSpreadsheetData();
 
-// 配列をランダムシャッフルするヘルパー関数
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -198,7 +204,6 @@ function generateMenu() {
         return;
     }
 
-    // スプレッドシートからレシピオブジェクトマップを構築
     const recipeMap = new Map();
     let currentName = "";
     let currentUrl = "";
@@ -235,17 +240,14 @@ function generateMenu() {
     currentSelectedRecipes = [];
 
     if (priceFilter === "安め") {
-        // 価格帯ごとに分類
         let lowRecipes = allRecipes.filter(r => r.price === "低");
         let midRecipes = allRecipes.filter(r => r.price === "中");
         let highRecipes = allRecipes.filter(r => r.price === "高");
 
-        // シャッフル
         shuffle(lowRecipes);
         shuffle(midRecipes);
         shuffle(highRecipes);
 
-        // 日数に応じた価格帯の配分パターンを定義
         let pattern = [];
         if (count === 1) pattern = ["低"];
         else if (count === 2) pattern = ["低", "低"];
@@ -255,11 +257,9 @@ function generateMenu() {
         else if (count === 6) pattern = ["低", "低", "低", "低", "中", "中"];
         else if (count >= 7) pattern = ["低", "低", "低", "低", "中", "中", "高"];
 
-        // 各価格帯のポインタ
         let pLow = 0, pMid = 0, pHigh = 0;
 
         for (let i = 0; i < count; i++) {
-            // 7日を超える場合のループ用補正
             let currentTarget = pattern[i % pattern.length];
             let selected = null;
 
@@ -271,7 +271,6 @@ function generateMenu() {
                 selected = highRecipes[pHigh++];
             }
 
-            // 万が一、対象の価格帯レシピが尽きていた場合は全レシピのシャッフルから未選択のものを補填
             if (!selected) {
                 let fallbackList = shuffle([...allRecipes]);
                 selected = fallbackList.find(r => !currentSelectedRecipes.includes(r));
@@ -280,7 +279,6 @@ function generateMenu() {
             if (selected) currentSelectedRecipes.push(selected);
         }
     } else {
-        // 「普通（すべて表示）」の場合は完全ランダム
         let shuffledAll = shuffle([...allRecipes]);
         currentSelectedRecipes = shuffledAll.slice(0, count);
     }
@@ -346,7 +344,6 @@ function renderShoppingList(recipes, container, prefix, checkedItems = []) {
         itemsMap.forEach((qtys, itemName) => {
             const combinedQty = qtys.length > 0 ? qtys.join(' ＋ ') : "適量";
             const inputId = `chk-${prefix}-${group}-${itemName}`;
-            // 保存されたチェックリストに存在するかどうか判定
             const isChecked = checkedItems.includes(inputId) ? "checked" : "";
             
             groupHtml += `
@@ -362,11 +359,9 @@ function renderShoppingList(recipes, container, prefix, checkedItems = []) {
     });
 }
 
-// チェックボックス操作時に（キープ履歴データであれば）ローカルストレージの状態も即時更新する
 function updateLiveCheckStatus(prefix) {
-    if (prefix === "main") return; // メイン画面のチェックは保存ボタン押下時に一括取得するためスルー
+    if (prefix === "main") return; 
     
-    // プレフィックスが「saved-XXX」の形式なら、該当する履歴のチェック状態を上書き保存
     const historyId = prefix.replace("saved-", "");
     let keepHistory = JSON.parse(localStorage.getItem("saved_menu_history") || "[]");
     const targetItem = keepHistory.find(item => item.id === historyId);
@@ -383,7 +378,6 @@ function updateLiveCheckStatus(prefix) {
     }
 }
 
-// 📌 【アップグレード】チェック状態を含めてキープ保存
 function saveCurrentMenu() {
     if (currentSelectedRecipes.length === 0) {
         alert("まだ献立が自動生成されていません。先に「献立カレンダーを自動生成」ボタンを押してください。");
@@ -407,13 +401,11 @@ function saveCurrentMenu() {
     const timeLabel = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} 保存`;
     const newId = Date.now().toString();
 
-    // 🛠️ 現在メイン画面の買い物リストでチェックがついている要素のIDを取得
     const mainContainer = document.getElementById("shopping-list-container");
     const mainCheckboxes = mainContainer.querySelectorAll('input[type="checkbox"]');
     const checkedItems = [];
     mainCheckboxes.forEach(chk => {
         if (chk.checked) {
-            // IDプレフィックスを保存先の履歴ID用に置換してストック
             const savedIdFormat = chk.id.replace("chk-main-", `chk-saved-${newId}-`);
             checkedItems.push(savedIdFormat);
         }
@@ -423,7 +415,7 @@ function saveCurrentMenu() {
         id: newId,
         label: timeLabel,
         recipes: currentSelectedRecipes,
-        checkedItems: checkedItems // チェック状態リストを内包
+        checkedItems: checkedItems 
     });
 
     localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
@@ -468,7 +460,6 @@ function drawSavedContent(historyItem) {
     }
 
     renderCalendar(historyItem.recipes, savedContainer);
-    // 保存時のチェックリスト状態（checkedItems）を引き渡して描画
     renderShoppingList(historyItem.recipes, savedShoppingContainer, `saved-${historyItem.id}`, historyItem.checkedItems || []);
 }
 
@@ -497,6 +488,21 @@ function deleteSelectedMenu() {
         keepHistory = keepHistory.filter(item => item.id !== selectedId);
         localStorage.setItem("saved_menu_history", JSON.stringify(keepHistory));
         refreshHistoryDropdown();
+    }
+}
+
+// 📌 【新機能】キープ履歴を一括ですべて削除する
+function clearAllMenu() {
+    const localData = localStorage.getItem("saved_menu_history");
+    if (!localData || JSON.parse(localData).length === 0) {
+        alert("削除するキープ履歴がありません。");
+        return;
+    }
+
+    if (confirm("🚨 キープされているすべての献立履歴を完全に消去しますか？\n（この操作は取り消せません）")) {
+        localStorage.removeItem("saved_menu_history");
+        refreshHistoryDropdown();
+        alert("すべてのキープ履歴を消去しました。");
     }
 }
 </script>
